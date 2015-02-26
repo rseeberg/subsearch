@@ -2,8 +2,30 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title></title>
+    <link href="/style/normalize.min.css" rel="stylesheet" />
+    <link href="/style/main.min.css" rel="stylesheet" />
 </head>
 <body>
-initial commit
+    <header></header>
+    <main>
+        <section class="drop"></section>
+        <section class="settings" data-title="Settings">
+            <div>
+                this is where all sorts of stuff
+                <br/>
+                will be
+                <br/>
+                muhahaha
+            </div>
+        </section>
+    </main>
+    <footer></footer>
+    <script src="/script/opensubtitles.js"></script>
+    <script>
+        document.querySelector(".settings").addEventListener('click',function() {
+            this.classList.toggle('extended')
+        });
+
+    </script>
 </body>
 </html>

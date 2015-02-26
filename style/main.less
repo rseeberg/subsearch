@@ -1,0 +1,60 @@
+﻿/* Colors */
+@dark: #242424;
+@light: #d1d1d1;
+@background: #5f2e7d;
+*, *::before, *::after {
+    box-sizing:border-box;
+}
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    background: @background;
+    color: @light;
+}
+
+header {
+    height: 50px;
+    background: @dark;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content:center;
+    
+    & > section {
+        width: 500px;
+    }
+
+    & > .drop {
+        height: 200px;
+        border: 1px dashed @dark;
+    }
+
+    & > .settings {
+        
+        &::before {
+            content: attr(data-title);
+            display: block;
+            height: 20px;
+            line-height: 20px;
+        }
+
+        & > div {
+            transition: opacity linear 750ms;
+            opacity: 0;
+        }
+
+        &.extended > div {
+            opacity: 1;
+        }
+    }
+}
+
+footer {
+    height: 100px;
+    background: @dark;
+}

@@ -1,31 +1,139 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <title></title>
-    <link href="/style/normalize.min.css" rel="stylesheet" />
-    <link href="/style/main.min.css" rel="stylesheet" />
+    <link rel="stylesheet/less" type="text/css" href="/style/normalize.less" />
+    <link rel="stylesheet/less" type="text/css" href="/style/main.less" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/2.3.1/less.min.js"></script>
 </head>
+
 <body>
-    <header></header>
+    <header>
+        <div class="logo" data-title="SubSearch">
+
+        </div>
+        <div class="menu">
+
+        </div>
+        <div class="support">
+            Made&nbsp;with&nbsp;<span class="heart"></span>
+        </div>
+    </header>
     <main>
-        <section class="drop"></section>
-        <section class="settings" data-title="Settings">
-            <div>
-                this is where all sorts of stuff
-                <br/>
-                will be
-                <br/>
-                muhahaha
-            </div>
+        <section class="drop" data-title="Drop any number of video files here. click to search"></section>
+        <section class="thumbnails">
+            <ul>
+            </ul>
         </section>
     </main>
     <footer></footer>
+    <script src="/script/$.js"></script>
+    <script src="/script/ClassIE.min.js"></script>
+    <script src="/script/Long.min.js"></script>
     <script src="/script/opensubtitles.js"></script>
     <script>
-        document.querySelector(".settings").addEventListener('click',function() {
-            this.classList.toggle('extended')
-        });
+        var extensions = ['mp4',
+                          'avi',
+                          'mkv',
+                          'mov',
+                          'm4p',
+                          'mpg',
+                          'mpeg',
+                          '3gp',
+                          'm2v',
+                          'bin'];
+        var items = [];
 
+        function prevent(e) {
+            if(e.preventDefault) {
+                e.preventDefault();
+            }
+            if(e.stopPropagation) {
+                e.stopPropagation();
+            }
+        }
+
+        var thumbnails = {};
+        thumbnails.ul = $('.thumbnails > ul');
+        
+        thumbnails.draw = function (item) {
+            var remove = document.createElement('div');
+            remove.appendChild(document.createTextNode('x'));
+            remove.setAttribute('class','remove');
+            
+            var thumbnail = document.createElement('li');
+            thumbnail.setAttribute('id',item.hash);
+            thumbnail.appendChild(remove);
+            thumbnail.appendChild(document.createTextNode(item.name));
+            
+            thumbnails.ul.appendChild(thumbnail);
+        };
+
+        
+        document.on('dragenter', prevent).on('dragover', prevent).on('drop', prevent);
+        $('.drop').on('drop', function (e) {
+            var dropped = e.target.files || e.dataTransfer.files;
+            
+            for(var i = 0; i < dropped.length; i++) {
+                if(extensions.indexOf(dropped[i].name.substring(dropped[i].name.lastIndexOf('.')+1)) > -1) {
+                    window.os.hash(dropped[i], function (file, hash) {
+                        for(var j = 0; j < items.length; j++) {
+                            if(items[j].hash === hash) {
+                                alert(items[j].name + ' already added :)');
+                                return false;
+                            }
+                        }
+
+                        thumbnails.draw(items[items.push({
+                            name: file.name,
+                            size: file.size,
+                            hash: hash
+                        }) - 1]);
+                    });
+                } else {
+                    alert(dropped[i].name + ' does not have a valid extension :)');
+                }
+            }
+            prevent(e);
+        });
+        
+        $('.drop').on('click',function(e) {
+            window.os.methods.login({ callback: function(login) {
+                if(!login.error) {
+                    window.os.methods.search({
+                        languages: ['dan','eng'],
+                        items: items,
+                        callback: function(search) {
+                            console.log(search);
+                        }
+                    });
+                }
+            
+            }});
+        });
+        
+        $('.thumbnails').on('click',function(e) {
+            if(e.srcElement.classList.contains('remove')) {
+                var thumbnail = e.srcElement.parentElement;
+                var hash =  thumbnail.id;
+                
+                for(var i = 0; i < items.length; i++) {
+                    if(items[i].hash === hash) {
+                        if(confirm('Are you sure you want to remove this item?')) {
+                            items.splice(i,1);
+                            thumbnail.parentElement.removeChild(thumbnail);
+                        }
+                        prevent(e);
+                        return;
+                        
+                    }
+                }
+            }
+        });
+        
+        
     </script>
 </body>
+
 </html>

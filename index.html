@@ -30,19 +30,13 @@
     <footer></footer>
     <script src="/script/$.js"></script>
     <script src="/script/ClassIE.min.js"></script>
-    <script src="/script/Long.min.js"></script>
+    <script src="/script/pako.js"></script>
+    <script src="/script/xml2json.js"></script>
+    <script src="/script/jszip.js"></script>
     <script src="/script/opensubtitles.js"></script>
     <script>
-        var extensions = ['mp4',
-                          'avi',
-                          'mkv',
-                          'mov',
-                          'm4p',
-                          'mpg',
-                          'mpeg',
-                          '3gp',
-                          'm2v',
-                          'bin'];
+        var x2js = new X2JS();
+        var extensions = ['mp4', 'avi', 'mkv', 'mov', 'm4p', 'mpg', 'mpeg', '3gp', 'm2v'];
         var items = [];
 
         function prevent(e) {
@@ -101,18 +95,89 @@
         $('.drop').on('click',function(e) {
             window.os.methods.login({ callback: function(login) {
                 if(!login.error) {
-                    window.os.methods.search({
-                        languages: ['dan','eng'],
-                        items: items,
-                        callback: function(search) {
-                            console.log(search);
-                        }
-                    });
+                    search();
                 }
-            
             }});
         });
+
+        function search() {
+            window.os.methods.search({
+                languages: ['dan','eng'],
+                items: items,
+                callback: function(search) {
+                    var subtitles = x2js.xml2json(search.parsed).methodResponse.params.param.value.struct.member[1].value;
+                    if(subtitles.boolean && subtitles.boolean === "0") {
+                        alert("No subtitles found :(");
+                        return false;
+                    }
+                    subtitles = subtitles.array.data.value;
+                    for (var s = 0; s < subtitles.length; s++) {
+                        var subtitle = subtitles[s].struct;
+                        var proper = {};
+                        for (var m = 0; m < subtitle.member.length; m++) {
+                            var member = subtitle.member[m];
+                            proper[member.name] = member.value.string;
+                        }
+
+                        for (var i = 0; i < items.length; i++) {
+                            if(items[i].hash === proper.MovieHash) {
+                                if(items[i].subtitles === undefined) {
+                                    items[i].subtitles = [];
+                                }
+
+                                items[i].subtitles.push(proper);
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+        }
         
+        //window.os.methods.download({items: [{ id: '1953757678'}], callback:function(a,b) { console.log(a); console.log(b);}});
+        
+        function order_subtitles() {
+            /* find out which of the searched subtitles we actually want to download, since we get many subtitles for the same file */
+            //-2 = force false
+            //-1 = prefer false
+            //0  = dont care
+            //1  = prefer true
+            //2  = force true
+            var parameters = {
+                Hearing_impaired: 1,
+                languages: ['dan','eng'],
+                format: 'srt'
+            };
+
+            for(var i = 0; i < items.length; i++) {
+                items[i].subtitles.sort(function(a,b) {
+                    var language_value = parameters.languages.indexOf(a.SubLanguageID) - parameters.languages.indexOf(b.SubLanguageID);
+                    if(language_value === 0) {
+                        //same language, so we continue in the tiered sorting
+                        var hearing_impaired_value = parseInt(a.SubHearingImpaired,10) - parseInt(b.SubHearingImpaired,10);
+                        if(parameters.Hearing_impaired === 0) {
+                            //next tier
+
+                        }
+                        return parameters.Hearing_impaired < 0 ? -hearing_impaired_value : hearing_impaired_value;
+                    }
+                    return language_value;
+                });
+            }
+        }
+
+        function download(downloads) {
+            /* download subtitles,
+               decode base64, gzip decompress(inflate), substring to indexOf(1) to remove any crap in start of string,
+               convert string into a blob of data, add data to zip. 
+               download zip
+            */
+            window.os.methods.download({
+                items: indata,
+                callback: download
+            });
+        }
+
         $('.thumbnails').on('click',function(e) {
             if(e.srcElement.classList.contains('remove')) {
                 var thumbnail = e.srcElement.parentElement;
@@ -131,8 +196,6 @@
                 }
             }
         });
-        
-        
     </script>
 </body>
 

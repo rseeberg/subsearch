@@ -10,7 +10,8 @@
         xhr.onload = function () {
             properties.callback.call(xhr, {
                 error: false,
-                response: xhr.response
+                response: xhr.response,
+                parsed: new DOMParser().parseFromString(xhr.response, 'text/xml')
             });
         };
 
@@ -108,20 +109,10 @@
     };
     
     ns.methods = {};
-    ns.methods.dummy = function(properties) {
-        var data = '<methodCall><methodName>SearchSubtitles</methodName><params><param><value><string>'+ns.properties.token+'</string></value></param><param><value><array><data><value><struct><member><name>sublanguageid</name><value><string>dan,eng</string></value></member><member><name>moviehash</name><value><string>-16cca794e731eaa</string></value></member><member><name>moviebytesize</name><value><double>355866546</double></value></member></struct></value></data></array></value></param></params></methodCall>';
-        var xhr = POST(data, function(data) {
-            if(properties.callback) {
-                properties.callback.call(xhr, data);
-            }
-        });
-        return xhr;
-    };
     
     ns.methods.login = function (properties) {
         var data = '<methodCall><methodName>LogIn</methodName><params><param><value><string>' + (properties.username || '') + '</string></value></param><param><value><string>' + (properties.password || '') + '</string></value></param><param><value><string>en</string></value></param><param><value><string>' + ns.properties.useragent + '</string></value></param></params></methodCall>';
         var xhr = POST(data, function (data) {
-            data.parsed = new DOMParser().parseFromString(data.response, 'text/xml');
             ns.properties.token = data.parsed.querySelector('methodResponse > params > param > value > struct > member:nth-child(1) > value > string').textContent;
             if(properties.callback) {
                 properties.callback.call(xhr, data);
@@ -132,7 +123,6 @@
     };
 
     ns.methods.search = function (properties) {
-        debugger;
         var item = '<value><struct><member><name>sublanguageid</name><value><string>{languageid}</string></value></member><member><name>moviehash</name><value><string>{moviehash}</string></value></member><member><name>moviebytesize</name><value><double>{moviebytesize}</double></value></member></struct></value>';
         var data = '<methodCall><methodName>SearchSubtitles</methodName><params><param><value><string>' + ns.properties.token + '</string></value></param><param><value><array><data>{movies}</data></array></value></param></params></methodCall>';
 
@@ -142,7 +132,6 @@
         }
 
         var xhr = POST(data.replace('{movies}', tmp), function (data) {
-            data.parsed = new DOMParser().parseFromString(data.response, 'text/xml');
             if(properties.callback) {
                 properties.callback.call(xhr, data);
             }
@@ -152,6 +141,18 @@
     };
 
     ns.methods.download = function (properties) {
+        var item = '<value><int>{subtitleid}</int></value>';
+        var data = '<methodCall><methodName>DownloadSubtitles</methodName><params><param><value><string>' + ns.properties.token + '</string></value></param><param><value><array><data>{subtitles}</data></array></value></param></params></methodCall>';
+        var tmp = '';
+        
+        for(var i = 0; i < properties.items.length; i++) {
+            tmp += item.replace('{subtitleid}',properties.items[i].id);
+        }
 
+        var xhr = POST(data.replace('{subtitles}',tmp), function(data) {
+            if(properties.callback) {
+                properties.callback.call(xhr, data);
+            }
+        });
     };
 })(window.os = {});
